@@ -1,0 +1,60 @@
+batchsize: 128
+valid_batchsize: 128
+valid_trigger: [1, "epoch"]
+snapshot_trigger: [20, "epoch"]
+log_trigger: [1, "epoch"]
+stop_epoch: 20
+seed: 0
+
+dataset:
+  train:
+    file: dataset.py
+    name: Dataset
+    args:
+      split: train
+  valid:
+    file: dataset.py
+    name: Dataset
+    args:
+      split: valid
+
+model:
+  file: model.py
+  name: Model
+  args:
+    n_class: 10
+
+loss:
+  file: loss.py
+  name: Loss
+
+optimizer:
+  method: MomentumSGD
+  args:
+    lr: 0.01
+    momentum: 0.9
+  weight_decay: 0.0005
+  lr_drop_ratio: 0.1
+  lr_drop_trigger: [10, "epoch"]
+
+plot_settings:
+  - file_name: loss.png
+    plot_values:
+      - main/loss
+      - validation/main/loss
+    x_axis: epoch
+  - file_name: accuracy.png
+    plot_values:
+      - main/accuracy
+      - validation/main/accuracy
+    x_axis: epoch
+
+print_values:
+  - epoch
+  - iteration
+  - main/loss
+  - validation/main/loss
+  - main/accuracy
+  - validation/main/accuracy
+  - elapsed_time
+  - lr
