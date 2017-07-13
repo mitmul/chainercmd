@@ -19,7 +19,7 @@ setup(
     url='https://chainertp.readthedocs.io',
     license='MIT License',
     packages=[
-        'chainertp',
+        'chainercmd',
     ],
     zip_safe=False,
     setup_requires=setup_requires,
@@ -27,7 +27,7 @@ setup(
     tests_require=['mock', 'nose'],
     entry_points={
         'console_scripts': [
-            'chainer_train=chainertp.bin:train'
+            'chainer=chainercmd.bin.chainercmd:main'
         ]
     }
 )

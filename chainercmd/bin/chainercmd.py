@@ -134,14 +134,7 @@ def create_updater(train_iter, optimizer, devices):
     return updater
 
 
-def train():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str)
-    parser.add_argument('--gpus', type=int, nargs='*')
-    parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--result_dir', type=str, default=None)
-    parser.add_argument('--resume', type=str, default=None)
-    args = parser.parse_args()
+def train(args):
     config = yaml.load(open(args.config))
 
     # Setting random seed
@@ -251,3 +244,33 @@ def train():
 
     trainer.run()
     return 0
+
+
+def test(args):
+    print(args)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='ChainerCMD')
+    subparsers = parser.add_subparsers()
+
+    # train command
+    parser_train = subparsers.add_parser('train', help='Training mode')
+    parser_train.add_argument('--config', type=str)
+    parser_train.add_argument('--gpus', type=int, nargs='*')
+    parser_train.add_argument('--seed', type=int, default=0)
+    parser_train.add_argument('--result_dir', type=str, default=None)
+    parser_train.add_argument('--resume', type=str, default=None)
+    parser_train.set_defaults(handler=train)
+
+    # test command
+    parser_test = subparsers.add_parser('test', help='Inference mode')
+    parser_test.add_argument('--config', type=str)
+    parser_test.add_argument('--gpu', type=int)
+    parser_test.add_argument('--snapshot', type=str)
+    parser_test.set_defaults(handler=test)
+
+    args = parser.parse_args()
+
+    if hasattr(args, 'handler'):
+        args.handler(args)
