@@ -18,6 +18,10 @@ from chainer import training
 from chainer.training import extensions
 from chainer.training import updaters
 
+from chainercmd import config as configs
+from chainercmd import template
+from chainercmd import util
+
 try:
     HAVE_NCCL = updaters.MultiprocessParallelUpdater.available()
 except:
@@ -35,14 +39,14 @@ def create_result_dir(prefix='result'):
     return result_dir
 
 
-def create_result_dir_from_configpath(config_path):
+def create_result_dir_from_config_path(config_path):
     config_name = os.path.splitext(os.path.basename(config_path))[0]
     return create_result_dir(config_name)
 
 
 def get_model(
         model_file, model_name, model_args, loss_file, loss_name, loss_args,
-        result_dir, train=True):
+        result_dir):
     model = imp.load_source(model_name, model_file)
     model = getattr(model, model_name)
 
@@ -53,15 +57,15 @@ def get_model(
             shutil.copy(model_file, dst)
 
     # Initialize
-    if len(model_args) > 0:
+    if model_args is not None:
         model = model(**model_args)
     else:
-        mdoel = model()
+        model = model()
 
-    if train:
+    if chainer.config.train:
         loss = imp.load_source(loss_name, loss_file)
         loss = getattr(loss, loss_name)
-        if loss_args:
+        if loss_args is not None:
             model = loss(model, **loss_args)
         else:
             model = loss(model)
@@ -71,6 +75,14 @@ def get_model(
         if not os.path.exists(dst):
             shutil.copy(loss_file, dst)
     return model
+
+
+def get_model_from_config(config):
+    model = configs.Model(**config['model'])
+    loss = configs.Loss(**config['loss'])
+    return get_model(
+        model.file, model.name, model.args, loss.file, loss.name, loss.args,
+        config['result_dir'])
 
 
 def get_optimizer(model, method, optimizer_args, weight_decay=None):
@@ -137,7 +149,7 @@ def create_updater(train_iter, optimizer, devices):
         updater = training.ParallelUpdater(
             train_iter, optimizer, devices=devices)
     else:
-        updater = training.SerialUpdater(
+        updater = training.StandardUpdater(
             train_iter, optimizer, device=devices['main'])
     return updater
 
@@ -146,25 +158,23 @@ def train(args):
     config = yaml.load(open(args.config))
 
     # Setting random seed
-    random.seed(args.seed)
-    np.random.seed(args.seed)
+    random.seed(config['seed'])
+    np.random.seed(config['seed'])
 
+    # Output version info
     print('chainer version: {}'.format(chainer.__version__))
     print('cuda: {}, cudnn: {}, nccl: {}'.format(
         chainer.cuda.available, chainer.cuda.cudnn_enabled, HAVE_NCCL))
+
     if args.result_dir is not None:
         config['result_dir'] = args.result_dir
     else:
-        config['result_dir'] = create_result_dir_from_configpath(args.config)
+        config['result_dir'] = create_result_dir_from_config_path(args.config)
     log_fn = save_config_get_log_fn(config['result_dir'], args.config)
     print('result_dir:', config['result_dir'])
 
     # Instantiate model
-    model = get_model(
-        config['model']['file'], config['model']['name'],
-        config['model']['args'], config['loss']['file'],
-        config['loss']['name'], config['loss']['args'],
-        config['result_dir'], train=True)
+    model = get_model_from_config(config)
 
     # Initialize optimizer
     if 'weight_decay' in config['optimizer']:
@@ -207,11 +217,8 @@ def train(args):
     st = config['snapshot_trigger'][1]
     tx = '{' + '.updater.{}'.format(st) + '}'
     trainer.extend(extensions.snapshot(
-        filename='snapshot_trainer_{}_{}'.format(st, tx),
-        trigger=tuple(config['snapshot_trigger'])))
-    trainer.extend(extensions.snapshot_object(
-        model.predictor, filename='snapshot_model_{}_{}'.format(st, tx),
-        trigger=tuple(config['snapshot_trigger'])))
+        filename='snapshot_trainer_{}_{}'.format(st, tx)),
+        trigger=tuple(config['snapshot_trigger']))
 
     # Add Logger
     log_trigger = config['log_trigger']

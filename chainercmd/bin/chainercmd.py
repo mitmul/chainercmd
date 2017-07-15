@@ -15,7 +15,7 @@ def main():
     # train command
     parser_train = subparsers.add_parser('train', help='Training mode')
     parser_train.add_argument('config', type=str)
-    parser_train.add_argument('--gpus', type=int, nargs='*', default=-1)
+    parser_train.add_argument('--gpus', type=int, nargs='*', default=[-1])
     parser_train.add_argument('--seed', type=int, default=0)
     parser_train.add_argument('--result_dir', type=str, default=None)
     parser_train.add_argument('--resume', type=str, default=None)

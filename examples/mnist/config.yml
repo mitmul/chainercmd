@@ -1,7 +1,7 @@
 batchsize: 128
 valid_batchsize: 128
-valid_trigger: [1, "epoch"]
-snapshot_trigger: [20, "epoch"]
+valid_trigger: [1, 'epoch']
+snapshot_trigger: [20, 'epoch']
 log_trigger: [1, "epoch"]
 stop_epoch: 20
 seed: 0
@@ -9,33 +9,27 @@ seed: 0
 dataset:
   train:
     file: dataset.py
-    name: Dataset
+    name: MNIST
     args:
       split: train
+      ndim: 3
   valid:
     file: dataset.py
-    name: Dataset
+    name: MNIST
     args:
       split: valid
+      ndim: 3
 
 model:
   file: model.py
-  name: Model
-  args:
-    n_class: 10
+  name: LeNet5
 
 loss:
   file: loss.py
   name: Loss
 
 optimizer:
-  method: MomentumSGD
-  args:
-    lr: 0.01
-    momentum: 0.9
-  weight_decay: 0.0005
-  lr_drop_ratio: 0.1
-  lr_drop_trigger: [10, "epoch"]
+  method: Adam
 
 plot_settings:
   - file_name: loss.png

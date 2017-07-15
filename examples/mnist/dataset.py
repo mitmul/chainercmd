@@ -1,13 +1,16 @@
 import chainer
+from chainer.datasets import get_mnist
 
 
-class Dataset(chainer.dataset.DatasetMixin):
+class MNIST(chainer.dataset.DatasetMixin):
 
-    def __init__(self, split='train'):
-        super(Dataset, self).__init__()
+    def __init__(self, split='train', ndim=3):
+        super(MNIST, self).__init__()
+        train, valid = get_mnist(ndim=ndim)
+        self.d = train if split == 'train' else valid
 
     def __len__(self):
-        pass
+        return len(self.d)
 
     def get_example(self, i):
-        pass
+        return self.d[i]

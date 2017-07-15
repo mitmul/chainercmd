@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup_requires = []
 install_requires = [
-    'chainer==2.0.1',
+    'chainer<3',
     'chainercv==0.6.0',
     'pyyaml'
 ]
