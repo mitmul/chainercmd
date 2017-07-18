@@ -1,19 +1,39 @@
-class Dataset(object):
+from importlib.machinery import SourceFileLoader
+
+from chainercmd.config.base import ConfigBase
+
+
+class Dataset(ConfigBase):
 
     def __init__(self, **kwargs):
         required_keys = [
-            {'train': {'file': None, 'name': None, 'args': None}}
+            'file',
+            'name',
         ]
-
-        for key in required_keys:
-            if key not in kwargs:
-                raise KeyError(
-                    'dataset config should have the key {}'.format(key))
-            for kk in kwargs[key]:
-                required_keys[key][kk] = kwargs[key][kk]
-            setattr(self, key, required_keys[key])
-
         optional_keys = [
-            {'valid': ['file', 'name', 'args']},
-            {'test': ['file', 'name', 'args']}
+            'args',
         ]
+        super().__init__(
+            required_keys, optional_keys, kwargs, self.__class__.__name__)
+
+
+def get_dataset(class_name, file_name, args):
+    loader = SourceFileLoader(class_name, file_name)
+    mod = loader.load_module()
+    dataset = getattr(mod, class_name)
+    dataset = dataset(**args)
+    return dataset
+
+
+def get_dataset_from_config(config):
+    for key in config['dataset']:
+        d = Dataset(**config['dataset'][key])
+        if key == 'train':
+            train = get_dataset(d.name, d.file, d.args)
+        elif key == 'valid':
+            valid = get_dataset(d.name, d.file, d.args)
+        else:
+            raise ValueError(
+                'The dataset key should be either "train" or "valid", '
+                'but {} was given.'.format(key))
+    return train, valid

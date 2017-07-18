@@ -22,33 +22,45 @@ dataset:
 
 model:
   file: model.py
-  name: LeNet5
+  name:  LeNet5
 
 loss:
   file: loss.py
   name: Loss
 
 optimizer:
-  method: Adam
+  method: MomentumSGD
+  args:
+    lr: 0.1
+  weight_decay: 0.0001
+  lr_drop_ratio: 0.1
+  lr_drop_triggers:
+    points: [10, 15]
+    unit: epoch
 
-plot_settings:
-  - file_name: loss.png
-    plot_values:
-      - main/loss
-      - validation/main/loss
-    x_axis: epoch
-  - file_name: accuracy.png
-    plot_values:
-      - main/accuracy
-      - validation/main/accuracy
-    x_axis: epoch
-
-print_values:
-  - epoch
-  - iteration
-  - main/loss
-  - validation/main/loss
-  - main/accuracy
-  - validation/main/accuracy
-  - elapsed_time
-  - lr
+trainer_extension:
+  - dump_graph:
+      root_name: main/loss
+      out_name: cg.dot
+  - PlotReport:
+      y_keys:
+        - main/loss
+        - validation/main/loss
+      x_key: epoch
+      file_name: loss.png
+  - PlotReport:
+      y_keys:
+        - main/accuracy
+        - validation/main/accuracy
+      x_key: epoch
+      file_name: accuracy.png
+  - PrintReport:
+    - epoch
+    - iteration
+    - main/loss
+    - validation/main/loss
+    - main/accuracy
+    - validation/main/accuracy
+    - elapsed_time
+    - lr
+  - ProgressBar

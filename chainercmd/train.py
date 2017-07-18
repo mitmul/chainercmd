@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import imp
 import os
 import random
 import re
@@ -12,19 +11,18 @@ import chainer
 import numpy as np
 import yaml
 from chainer import iterators
-from chainer import optimizers
 from chainer import serializers
 from chainer import training
 from chainer.training import extensions
 from chainer.training import updaters
-
-from chainercmd import config as configs
-from chainercmd import template
-from chainercmd import util
+from chainer.training import triggers
+from chainercmd.config import get_dataset_from_config
+from chainercmd.config import get_model_from_config
+from chainercmd.config import get_optimizer_from_config
 
 try:
     HAVE_NCCL = updaters.MultiprocessParallelUpdater.available()
-except:
+except Exception:
     HAVE_NCCL = False
 
 
@@ -44,55 +42,6 @@ def create_result_dir_from_config_path(config_path):
     return create_result_dir(config_name)
 
 
-def get_model(
-        model_file, model_name, model_args, loss_file, loss_name, loss_args,
-        result_dir):
-    model = imp.load_source(model_name, model_file)
-    model = getattr(model, model_name)
-
-    # Copy model file
-    if train:
-        dst = '{}/{}'.format(result_dir, os.path.basename(model_file))
-        if not os.path.exists(dst):
-            shutil.copy(model_file, dst)
-
-    # Initialize
-    if model_args is not None:
-        model = model(**model_args)
-    else:
-        model = model()
-
-    if chainer.config.train:
-        loss = imp.load_source(loss_name, loss_file)
-        loss = getattr(loss, loss_name)
-        if loss_args is not None:
-            model = loss(model, **loss_args)
-        else:
-            model = loss(model)
-
-        # Copy loss file
-        dst = '{}/{}'.format(result_dir, os.path.basename(loss_file))
-        if not os.path.exists(dst):
-            shutil.copy(loss_file, dst)
-    return model
-
-
-def get_model_from_config(config):
-    model = configs.Model(**config['model'])
-    loss = configs.Loss(**config['loss'])
-    return get_model(
-        model.file, model.name, model.args, loss.file, loss.name, loss.args,
-        config['result_dir'])
-
-
-def get_optimizer(model, method, optimizer_args, weight_decay=None):
-    optimizer = getattr(optimizers, method)(**optimizer_args)
-    optimizer.setup(model)
-    if weight_decay is not None:
-        optimizer.add_hook(chainer.optimizer.WeightDecay(weight_decay))
-    return optimizer
-
-
 def save_config_get_log_fn(result_dir, config_path):
     save_name = os.path.basename(config_path)
     a, b = os.path.splitext(save_name)
@@ -103,26 +52,6 @@ def save_config_get_log_fn(result_dir, config_path):
         save_name = '{}_{}{}'.format(a, i, b)
     shutil.copy(config_path, '{}/{}'.format(result_dir, save_name))
     return 'log_{}'.format(i)
-
-
-def create_datasets(config):
-    config = config['dataset']
-    train_dataset = imp.load_source(
-        config['train']['name'], config['train']['file'])
-    train_dataset = getattr(train_dataset, config['train']['name'])
-    if len(config['train']['args']) > 0:
-        train_dataset = train_dataset(**config['train']['args'])
-    else:
-        train_dataset = train_dataset()
-
-    valid_dataset = imp.load_source(
-        config['valid']['name'], config['valid']['file'])
-    valid_dataset = getattr(valid_dataset, config['valid']['name'])
-    if len(config['valid']['args']) > 0:
-        valid_dataset = valid_dataset(**config['valid']['args'])
-    else:
-        valid_dataset = valid_dataset()
-    return train_dataset, valid_dataset
 
 
 def create_iterators(train_dataset, batchsize, valid_dataset, valid_batchsize,
@@ -166,6 +95,7 @@ def train(args):
     print('cuda: {}, cudnn: {}, nccl: {}'.format(
         chainer.cuda.available, chainer.cuda.cudnn_enabled, HAVE_NCCL))
 
+    # Create result_dir
     if args.result_dir is not None:
         config['result_dir'] = args.result_dir
     else:
@@ -177,23 +107,17 @@ def train(args):
     model = get_model_from_config(config)
 
     # Initialize optimizer
-    if 'weight_decay' in config['optimizer']:
-        weight_decay = config['optimizer']['weight_decay']
-    else:
-        weight_decay = None
-    optimizer = get_optimizer(
-        model, config['optimizer']['method'], config['optimizer']['args'],
-        weight_decay)
+    optimizer = get_optimizer_from_config(model, config)
+
+    # Setting up datasets
+    train_dataset, valid_dataset = get_dataset_from_config(config)
+    print('train: {}'.format(len(train_dataset)))
+    print('valid: {}'.format(len(valid_dataset)))
 
     # Prepare devices
     devices = {'main': args.gpus[0]}
     for gid in args.gpus[1:]:
         devices['gpu{}'.format(gid)] = gid
-
-    # Setting up datasets
-    train_dataset, valid_dataset = create_datasets(config)
-    print('train: {}'.format(len(train_dataset)))
-    print('valid: {}'.format(len(valid_dataset)))
 
     # Create iterators
     train_iter, valid_iter = create_iterators(
@@ -205,49 +129,52 @@ def train(args):
     trainer = training.Trainer(
         updater, (config['stop_epoch'], 'epoch'), out=config['result_dir'])
 
-    # Add evaluator
-    trainer.extend(
-        extensions.Evaluator(valid_iter, model, device=args.gpus[0]),
-        trigger=config['valid_trigger'])
+    if 'log_trigger' in config:
+        log_trigger = config['log_trigger']
+        trainer.extend(extensions.LogReport(
+            trigger=log_trigger, log_name=log_fn))
 
-    # Add dump_graph
-    trainer.extend(extensions.dump_graph('main/loss'))
+    if 'snapshot_trigger' in config:
+        st = config['snapshot_trigger'][1]
+        tx = '{' + '.updater.{}'.format(st) + '}'
+        trainer.extend(extensions.snapshot(
+            filename='snapshot_trainer_{}_{}'.format(st, tx)),
+            trigger=tuple(config['snapshot_trigger']))
 
-    # Add snapshot
-    st = config['snapshot_trigger'][1]
-    tx = '{' + '.updater.{}'.format(st) + '}'
-    trainer.extend(extensions.snapshot(
-        filename='snapshot_trainer_{}_{}'.format(st, tx)),
-        trigger=tuple(config['snapshot_trigger']))
+    if 'valid_trigger' in config:
+        trainer.extend(
+            extensions.Evaluator(valid_iter, model, device=args.gpus[0]),
+            trigger=config['valid_trigger'])
 
-    # Add Logger
-    log_trigger = config['log_trigger']
-    trainer.extend(extensions.ProgressBar(
-        update_interval=log_trigger[0]), trigger=log_trigger)
-    trainer.extend(extensions.LogReport(
-        trigger=log_trigger, log_name=log_fn))
-    for plot_setting in config['plot_settings']:
-        trainer.extend(extensions.PlotReport(
-            plot_setting['plot_values'], plot_setting['x_axis'], log_trigger,
-            file_name=plot_setting['file_name']))
-
-    # Values to be printed
-    print_values = config['print_values']
+    for ext in config['trainer_extension']:
+        if isinstance(ext, dict):
+            ext, values = ext.popitem()
+        print(ext, ':', values)
+        if ext == 'dump_graph':
+            print(ext, values)
+            trainer.extend(extensions.dump_graph(**values))
+        elif ext == 'PlotReport':
+            values['trigger'] = log_trigger
+            trainer.extend(extensions.PlotReport(**values))
+        elif ext == 'PrintReport':
+            if 'lr' in values:
+                trainer.extend(extensions.observe_lr())
+            trainer.extend(extensions.PrintReport(values))
+        elif ext == 'ProgressBar':
+            trainer.extend(extensions.ProgressBar(
+                update_interval=log_trigger[0]), trigger=log_trigger)
 
     # LR decay
-    if 'lr_drop_ratio' in config['optimizer']:
+    if 'lr_drop_ratio' in config['optimizer'] \
+            and 'lr_drop_triggers' in config['optimizer']:
         ratio = config['optimizer']['lr_drop_ratio']
-        trigger = config['optimizer']['lr_drop_trigger']
+        points = config['optimizer']['lr_drop_triggers']['points']
+        unit = config['optimizer']['lr_drop_triggers']['unit']
+        drop_trigger = triggers.ManualScheduleTrigger(points, unit)
 
-        @training.make_extension(trigger=trigger)
-        def learning_rate_dropping(trainer):
+        def lr_drop(trainer):
             trainer.updater.get_optimizer('main').lr *= ratio
-        trainer.extend(learning_rate_dropping)
-
-    if 'lr' in print_values:
-        trainer.extend(extensions.observe_lr())
-
-    trainer.extend(extensions.PrintReport(print_values))
+        trainer.extend(lr_drop, trigger=drop_trigger)
 
     # Resume
     if args.resume is not None:

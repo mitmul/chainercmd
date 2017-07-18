@@ -1,0 +1,55 @@
+batchsize: 128
+valid_batchsize: 128
+valid_trigger: [1, 'epoch']
+snapshot_trigger: [20, 'epoch']
+log_trigger: [1, "epoch"]
+stop_epoch: 20
+seed: 0
+base_dir: ./
+
+dataset:
+  train:
+    file: dataset.py
+    name: MNIST
+    args:
+      split: train
+      ndim: 3
+  valid:
+    file: dataset.py
+    name: MNIST
+    args:
+      split: valid
+      ndim: 3
+
+model:
+  file: model.py
+  name: LeNet5
+
+loss:
+  file: loss.py
+  name: Loss
+
+optimizer:
+  method: Adam
+
+plot_settings:
+  - file_name: loss.png
+    plot_values:
+      - main/loss
+      - validation/main/loss
+    x_axis: epoch
+  - file_name: accuracy.png
+    plot_values:
+      - main/accuracy
+      - validation/main/accuracy
+    x_axis: epoch
+
+print_values:
+  - epoch
+  - iteration
+  - main/loss
+  - validation/main/loss
+  - main/accuracy
+  - validation/main/accuracy
+  - elapsed_time
+  - lr

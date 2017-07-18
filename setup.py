@@ -7,7 +7,7 @@ setup_requires = []
 install_requires = [
     'chainer<3',
     'chainercv==0.6.0',
-    'pyyaml'
+    'pyyaml>=3.12'
 ]
 
 setup(

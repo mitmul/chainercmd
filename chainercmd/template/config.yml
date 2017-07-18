@@ -1,10 +1,10 @@
-batchsize:
-valid_batchsize:
-valid_trigger:
-snapshot_trigger:
-log_trigger:
-stop_epoch:
-seed:
+batchsize: 128
+valid_batchsize: 128
+valid_trigger: [1, 'epoch']
+snapshot_trigger: [20, 'epoch']
+log_trigger: [1, "epoch"]
+stop_epoch: 20
+seed: 0
 
 dataset:
   train:
@@ -27,40 +27,38 @@ loss:
   args:
 
 optimizer:
-  method:
+  method: MomentumSGD
   args:
-  weight_decay:
-  lr_drop_ratio:
-  lr_drop_trigger:
+    lr: 0.01
+  weight_decay: 0.0001
+  lr_drop_ratio: 0.1
+  lr_drop_triggers:
+    points: [10, 15]
+    unit: epoch
 
 trainer_extension:
-  - dump_graph
-  - Evaluator
-  - ExponentialShift:
-      attr:
-      rate:
-      init:
-      target:
-  - LinearShift:
-      attr:
-      value_range:
-      time_range:
-  - LogReport:
-      keys:
-      trigger:
-      log_name:
-  - observe_lr:
-      optimizer_name:
-      observation_key:
-  - observe_value:
-      observation_key:
-      target_func:
-  - snapshot:
-      filename:
+  - dump_graph:
+      root_name: main/loss
+      out_name: cg.dot
   - PlotReport:
       y_keys:
-      x_keys:
-      trigger:
-      file_name:
+        - main/loss
+        - validation/main/loss
+      x_key: epoch
+      file_name: loss.png
+  - PlotReport:
+      y_keys:
+        - main/accuracy
+        - validation/main/accuracy
+      x_key: epoch
+      file_name: accuracy.png
   - PrintReport:
-      entries:
+    - epoch
+    - iteration
+    - main/loss
+    - validation/main/loss
+    - main/accuracy
+    - validation/main/accuracy
+    - elapsed_time
+    - lr
+  - ProgressBar

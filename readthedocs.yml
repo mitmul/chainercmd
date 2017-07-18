@@ -1,4 +1,4 @@
-name: chainertp
+name: chainercmd
 type: sphinx
 base: docs/source
 python:
