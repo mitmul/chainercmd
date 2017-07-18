@@ -6,7 +6,6 @@ from setuptools import setup
 setup_requires = []
 install_requires = [
     'chainer<3',
-    'chainercv==0.6.0',
     'pyyaml>=3.12'
 ]
 
@@ -20,6 +19,9 @@ setup(
     license='MIT',
     packages=[
         'chainercmd',
+        'chainercmd.bin',
+        'chainercmd.config',
+        'chainercmd.template',
     ],
     keywords='chainer deeplearning',
     python_requires='>=3.4.4',
