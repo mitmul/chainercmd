@@ -24,7 +24,7 @@ setup(
         'chainercmd.template',
     ],
     package_data={
-        'chainercmd.template': ['template/config.yml']
+        'chainercmd.template': ['config.yml']
     },
     keywords='chainer deeplearning',
     python_requires='>=3.4.4',
