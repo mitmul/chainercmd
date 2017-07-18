@@ -149,7 +149,6 @@ def train(args):
     for ext in config['trainer_extension']:
         if isinstance(ext, dict):
             ext, values = ext.popitem()
-        print(ext, ':', values)
         if ext == 'dump_graph':
             print(ext, values)
             trainer.extend(extensions.dump_graph(**values))

@@ -5,7 +5,7 @@ import chainer.links as L
 
 class Model(chainer.Chain):
 
-    def __init__(self):
+    def __init__(self, n_class):
         super(Model, self).__init__()
         with self.init_scope():
             pass
