@@ -25,4 +25,4 @@ def init(args):
         shutil.copy(loss_template, './')
 
     dname = os.path.dirname(model_template)
-    shutil.copy('{}/train.yml'.format(dname), './')
+    shutil.copy('{}/config.yml'.format(dname), './')
