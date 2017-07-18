@@ -150,7 +150,6 @@ def train(args):
         if isinstance(ext, dict):
             ext, values = ext.popitem()
         if ext == 'dump_graph':
-            print(ext, values)
             trainer.extend(extensions.dump_graph(**values))
         elif ext == 'PlotReport':
             values['trigger'] = log_trigger

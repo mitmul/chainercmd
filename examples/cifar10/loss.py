@@ -27,7 +27,6 @@ class Loss(link.Chain):
         self.y = self.predictor(*x)
         self.loss = self.lossfun(self.y, t)
         reporter.report({'loss': self.loss}, self)
-        if self.compute_accuracy:
-            self.accuracy = self.accfun(self.y, t)
-            reporter.report({'accuracy': self.accuracy}, self)
+        self.accuracy = self.accfun(self.y, t)
+        reporter.report({'accuracy': self.accuracy}, self)
         return self.loss
