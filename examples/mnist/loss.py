@@ -6,12 +6,10 @@ from chainer.functions.loss import softmax_cross_entropy
 
 class Loss(link.Chain):
 
-    def __init__(self, predictor,
-                 lossfun=softmax_cross_entropy.softmax_cross_entropy,
-                 accfun=accuracy.accuracy):
+    def __init__(self, predictor):
         super(Loss, self).__init__()
-        self.lossfun = lossfun
-        self.accfun = accfun
+        self.lossfun = softmax_cross_entropy.softmax_cross_entropy
+        self.accfun = accuracy.accuracy
         self.y = None
         self.loss = None
         self.accuracy = None

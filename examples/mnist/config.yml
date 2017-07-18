@@ -22,7 +22,9 @@ dataset:
 
 model:
   file: model.py
-  name:  LeNet5
+  name: LeNet5
+  args:
+    n_class: 10
 
 loss:
   file: loss.py
@@ -31,7 +33,7 @@ loss:
 optimizer:
   method: MomentumSGD
   args:
-    lr: 0.1
+    lr: 0.01
   weight_decay: 0.0001
   lr_drop_ratio: 0.1
   lr_drop_triggers:
