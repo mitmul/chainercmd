@@ -12,15 +12,17 @@ install_requires = [
 
 setup(
     name='chainertcmd',
-    version='0.0.1',
+    version='1.0.0a1',
     description='Command Line Tools for Chainer',
     author='Shunta Saito',
     author_email='shunta.saito@gmail.com',
-    url='https://chainercmd.readthedocs.io',
-    license='MIT License',
+    url='https://github.com/mitmul/chainercmd',
+    license='MIT',
     packages=[
         'chainercmd',
     ],
+    keywords='chainer deeplearning',
+    python_requires='>=3.4.4',
     zip_safe=False,
     setup_requires=setup_requires,
     install_requires=install_requires,
