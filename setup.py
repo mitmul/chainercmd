@@ -11,12 +11,12 @@ install_requires = [
 ]
 
 setup(
-    name='chainerttp',
+    name='chainertcmd',
     version='0.0.1',
-    description='Templates for Chainer',
+    description='Command Line Tools for Chainer',
     author='Shunta Saito',
     author_email='shunta.saito@gmail.com',
-    url='https://chainertp.readthedocs.io',
+    url='https://chainercmd.readthedocs.io',
     license='MIT License',
     packages=[
         'chainercmd',
