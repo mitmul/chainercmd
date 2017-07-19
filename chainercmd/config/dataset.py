@@ -1,3 +1,5 @@
+import os
+import shutil
 from importlib.machinery import SourceFileLoader
 
 from chainercmd.config.base import ConfigBase
@@ -36,4 +38,7 @@ def get_dataset_from_config(config):
             raise ValueError(
                 'The dataset key should be either "train" or "valid", '
                 'but {} was given.'.format(key))
+        bname = os.path.basename(d.file)
+        shutil.copy(
+            d.file, '{}/{}_{}'.format(config['result_dir'], key, bname))
     return train, valid
