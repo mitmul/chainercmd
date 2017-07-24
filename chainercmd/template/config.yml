@@ -25,7 +25,7 @@ model:
     n_class: 10
 
 loss:
-  file: loss.py
+  file: loss.py  # If 'file' is ommitted, chainer.links.[name] is used
   name: Loss
 
 optimizer:
@@ -37,6 +37,12 @@ optimizer:
   lr_drop_triggers:
     points: [10, 15]
     unit: epoch
+
+updater_creator:
+  file: updater_creator.py
+  name: MyUpdaterCreator
+  args:
+    print: True
 
 trainer_extension:
   - dump_graph:

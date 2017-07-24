@@ -1,10 +1,11 @@
 import os
 import shutil
+from importlib import import_module
 from importlib.machinery import SourceFileLoader
 
-import chainer
-
 from chainercmd.config.base import ConfigBase
+
+import chainer
 
 
 class Model(ConfigBase):
@@ -25,19 +26,19 @@ class Loss(ConfigBase):
 
     def __init__(self, **kwargs):
         required_keys = [
-            'file',
             'name',
         ]
         optional_keys = [
-            'args'
+            'file',
+            'args',
         ]
         super().__init__(
             required_keys, optional_keys, kwargs, self.__class__.__name__)
 
 
 def get_model(
-        model_file, model_name, model_args, loss_file, loss_name, loss_args,
-        result_dir):
+        result_dir, model_file, model_name, model_args, loss_file, loss_name,
+        loss_args):
     loader = SourceFileLoader(model_name, model_file)
     mod = loader.load_module()
     model = getattr(mod, model_name)
@@ -54,19 +55,23 @@ def get_model(
     else:
         model = model()
 
-    if chainer.config.train:
-        loader = SourceFileLoader(loss_name, loss_file)
-        mod = loader.load_module()
+    if chainer.config.train and loss_name is not None:
+        if loss_file is not None:
+            loader = SourceFileLoader(loss_name, loss_file)
+            mod = loader.load_module()
+        else:
+            mod = import_module('chainer.links')
         loss = getattr(mod, loss_name)
         if loss_args is not None:
             model = loss(model, **loss_args)
         else:
             model = loss(model)
 
-        # Copy loss file
-        dst = '{}/{}'.format(result_dir, os.path.basename(loss_file))
-        if not os.path.exists(dst):
-            shutil.copy(loss_file, dst)
+        if loss_file is not None:
+            # Copy loss file
+            dst = '{}/{}'.format(result_dir, os.path.basename(loss_file))
+            if not os.path.exists(dst):
+                shutil.copy(loss_file, dst)
     return model
 
 
@@ -74,5 +79,5 @@ def get_model_from_config(config):
     model = Model(**config['model'])
     loss = Loss(**config['loss'])
     return get_model(
-        model.file, model.name, model.args, loss.file, loss.name, loss.args,
-        config['result_dir'])
+        config['result_dir'], model.file, model.name, model.args,
+        loss.file, loss.name, loss.args)

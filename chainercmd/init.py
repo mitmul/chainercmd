@@ -4,7 +4,7 @@ import shutil
 from chainercmd import template
 
 
-def init(args):
+def init_basic(args):
     model_template = os.path.abspath(template.model.__file__)
     dataset_template = os.path.abspath(template.dataset.__file__)
     loss_template = os.path.abspath(template.loss.__file__)
@@ -23,6 +23,22 @@ def init(args):
         shutil.copy(model_template, './')
         shutil.copy(dataset_template, './')
         shutil.copy(loss_template, './')
+    init_config(args)
 
+
+def init_config(args):
+    model_template = os.path.abspath(template.model.__file__)
     dname = os.path.dirname(model_template)
     shutil.copy('{}/config.yml'.format(dname), './')
+
+
+def init_full(args):
+    init_basic(args)
+    updater_creator_template = os.path.abspath(
+        template.updater_creator.__file__)
+    if args.create_subdirs:
+        if not os.path.exists('updater'):
+            os.mkdir('updater')
+        shutil.copy(updater_creator_template, 'updater/')
+    else:
+        shutil.copy(updater_creator_template, './')

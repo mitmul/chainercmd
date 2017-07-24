@@ -29,12 +29,28 @@ def main():
     parser_test.set_defaults(handler=test.test)
 
     # init command
-    parser_init = subparsers.add_parser('init', help='Inference mode')
+    parser_init = subparsers.add_parser(
+        'init', help='Generate templates of dataset.py, loss.py, and model.py')
     parser_init.add_argument(
         '--create_subdirs', action='store_true', default=False,
         help='If you want to create subdirs ("model", "loss", "dataset"), '
              'give this flag.')
-    parser_init.set_defaults(handler=init.init)
+    parser_init.set_defaults(handler=init.init_basic)
+
+    # init_full command
+    parser_init = subparsers.add_parser(
+        'init_full', help='Generate templates of dataset.py, loss.py, '
+                          'model.py, and updater_creator.py')
+    parser_init.add_argument(
+        '--create_subdirs', action='store_true', default=False,
+        help='If you want to create subdirs ("model", "loss", "dataset", '
+             '"updater_creator"), give this flag.')
+    parser_init.set_defaults(handler=init.init_full)
+
+    # init_config command
+    parser_init = subparsers.add_parser(
+        'init_config', help='Generate a config template')
+    parser_init.set_defaults(handler=init.init_config)
 
     args = parser.parse_args()
 

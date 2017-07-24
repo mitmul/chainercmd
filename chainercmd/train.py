@@ -19,6 +19,7 @@ from chainer.training import triggers
 from chainercmd.config import get_dataset_from_config
 from chainercmd.config import get_model_from_config
 from chainercmd.config import get_optimizer_from_config
+from chainercmd.config import get_updater_creator_from_config
 
 try:
     HAVE_NCCL = updaters.MultiprocessParallelUpdater.available()
@@ -125,7 +126,11 @@ def train(args):
         config['valid_batchsize'], devices)
 
     # Create updater and trainer
-    updater = create_updater(train_iter, optimizer, devices)
+    if 'updater_creator' in config:
+        updater_creator = get_updater_creator_from_config(config)
+        updater = updater_creator(train_iter, optimizer, devices)
+    else:
+        updater = create_updater(train_iter, optimizer, devices)
     trainer = training.Trainer(
         updater, (config['stop_epoch'], 'epoch'), out=config['result_dir'])
 
@@ -146,6 +151,7 @@ def train(args):
             extensions.Evaluator(valid_iter, model, device=args.gpus[0]),
             trigger=config['valid_trigger'])
 
+    # Trainer extensions
     for ext in config['trainer_extension']:
         if isinstance(ext, dict):
             ext, values = ext.popitem()
