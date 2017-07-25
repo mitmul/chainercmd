@@ -38,6 +38,7 @@ optimizer:
     points: [10, 15]
     unit: epoch
 
+# You can ommit this part
 updater_creator:
   file: updater_creator.py
   name: MyUpdaterCreator
