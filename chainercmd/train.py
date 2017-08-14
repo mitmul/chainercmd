@@ -164,7 +164,7 @@ def train(args):
             evaluator = getattr(mod, values['name'])
             if evaluator is extensions.Evaluator:
                 evaluator = evaluator(
-                    valid_iter, model, device=devices['main'])
+                    valid_iter, model, device=args.gpus[0])
             else:
                 evaluator = evaluator(valid_iter, model.predictor)
             trainer.extend(
