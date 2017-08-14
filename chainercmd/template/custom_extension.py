@@ -7,11 +7,10 @@ class CustomExtension(chainer.training.Extension):
         self._message = message
 
     def initialize(self, trainer):
-        print('I will send the message blow:')
-        print(self._message)
+        self._message += ' and Trainer ID is: {}'.format(id(trainer))
 
     def __call__(self, trainer):
-        print(self._message)
+        pass
 
     def serialize(self, serializer):
         self._message = serializer('_message', self._message)

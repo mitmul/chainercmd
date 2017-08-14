@@ -4,24 +4,29 @@ stop_trigger: [20, "epoch"]
 dataset:
   train:
     file: dataset.py
-    name: Dataset
+    name: MNIST
+    batchsize: 128
     args:
       split: train
+      ndim: 3
   valid:
     file: dataset.py
-    name: Dataset
+    name: MNIST
+    batchsize: 64
     args:
       split: valid
+      ndim: 3
 
 model:
   file: model.py
-  name: Model
+  name: LeNet5
   args:
     n_class: 10
 
 loss:
-  file: loss.py  # If 'file' is ommitted, chainer.links.[name] is used
-  name: Loss
+  module: chainer.links.model.classifier
+  # file: loss.py  # If you use your own loss definition, remove "module" key above and use "file" key to specify the path to the file which describes the "name" class for a Loss link.
+  name: Classifier
 
 optimizer:
   method: MomentumSGD
@@ -45,7 +50,7 @@ trainer_extension:
       file: custom_extension.py
       name: CustomExtension
       args:
-          message: 'I am learning the Answer to the Ultimate Question of Life, the Universe, and Everything'
+          message: 'I am learning...'
   - LogReport:
       trigger: [1, "epoch"]
   - dump_graph:
@@ -69,6 +74,7 @@ trainer_extension:
       name: Evaluator
       trigger: [1, "epoch"]
       prefix: val
+    # You can specify other evaluator like this:
     #   module: chainercv.extensions
     #   name: SemanticSegmentationEvaluator
     #   trigger: [1, "epoch"]

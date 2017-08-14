@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import os
-import random
 import re
 import shutil
 import time
+from importlib import import_module
+
+import yaml
 
 import chainer
-import numpy as np
-import yaml
 from chainer import iterators
 from chainer import serializers
 from chainer import training
@@ -21,7 +21,6 @@ from chainercmd.config import get_dataset_from_config
 from chainercmd.config import get_model_from_config
 from chainercmd.config import get_optimizer_from_config
 from chainercmd.config import get_updater_creator_from_config
-from importlib import import_module
 
 try:
     HAVE_NCCL = updaters.MultiprocessParallelUpdater.available()
@@ -89,6 +88,8 @@ def create_updater(train_iter, optimizer, devices):
 def train(args):
     config = yaml.load(open(args.config))
 
+    print('==========================================')
+
     # Set workspace size
     if 'max_workspace_size' in config:
         chainer.cuda.set_max_workspace_size(config['max_workspace_size'])
@@ -128,8 +129,8 @@ def train(args):
 
     # Create iterators
     train_iter, valid_iter = create_iterators(
-        train_dataset, config['batchsize'], valid_dataset,
-        config['valid_batchsize'], devices)
+        train_dataset, config['dataset']['train']['batchsize'],
+        valid_dataset, config['dataset']['valid']['batchsize'], devices)
     print('train_iter:', train_iter.__class__.__name__)
     print('valid_iter:', valid_iter.__class__.__name__)
 
@@ -143,7 +144,7 @@ def train(args):
 
     # Create trainer
     trainer = training.Trainer(
-        updater, config['strop_trigger'], out=config['result_dir'])
+        updater, config['stop_trigger'], out=config['result_dir'])
     print('Trainer stops:', config['stop_trigger'])
 
     # Trainer extensions
@@ -188,13 +189,13 @@ def train(args):
             links = []
             for link_name in values.pop('links'):
                 lns = [ln.strip() for ln in link_name.split('.') if ln.strip()]
-                target = model
+                target = model.predictor
                 for ln in lns:
                     target = getattr(target, ln)
                 links.append(target)
             trainer.extend(extensions.ParameterStatistics(links, **values))
         elif ext == 'custom':
-            custom_extension = get_custum_extension_from_config(values)
+            custom_extension = get_custum_extension_from_config( values)
             trainer.extend(custom_extension)
 
     # LR decay
@@ -215,6 +216,8 @@ def train(args):
         shutil.copy(args.resume, fn)
         serializers.load_npz(args.resume, trainer)
         print('Resumed from:', args.resume)
+
+    print('==========================================')
 
     trainer.run()
     return 0

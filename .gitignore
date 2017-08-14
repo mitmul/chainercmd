@@ -1,5 +1,5 @@
+.DS_Store
 result
-examples/mnist/result
 
 .sync-config.cson
 

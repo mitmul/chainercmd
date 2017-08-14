@@ -1,6 +1,7 @@
 import yaml
 import os
 
+from chainercmd.template import custom_extension  # NOQA
 from chainercmd.template import dataset  # NOQA
 from chainercmd.template import loss  # NOQA
 from chainercmd.template import model  # NOQA

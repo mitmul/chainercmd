@@ -8,6 +8,7 @@ def init_basic(args):
     model_template = os.path.abspath(template.model.__file__)
     dataset_template = os.path.abspath(template.dataset.__file__)
     loss_template = os.path.abspath(template.loss.__file__)
+    custom_ext_template = os.path.abspath(template.custom_extension.__file__)
 
     if args.create_subdirs:
         if not os.path.exists('model'):
@@ -19,10 +20,14 @@ def init_basic(args):
         if not os.path.exists('loss'):
             os.mkdir('loss')
         shutil.copy(loss_template, 'loss/')
+        if not os.path.exists('extension'):
+            os.mkdir('extension')
+        shutil.copy(custom_ext_template, 'extension/')
     else:
         shutil.copy(model_template, './')
         shutil.copy(dataset_template, './')
         shutil.copy(loss_template, './')
+        shutil.copy(custom_ext_template, './')
     init_config(args)
 
 

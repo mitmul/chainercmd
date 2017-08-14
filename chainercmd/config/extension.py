@@ -43,7 +43,7 @@ def get_custum_extension_from_config(evaluator_config):
     loader = SourceFileLoader(config.name, config.file)
     mod = loader.load_module()
     if hasattr(config, 'args'):
-        ext = getattr(mod, evaluator_config['name'])(config.args)
+        ext = getattr(mod, evaluator_config['name'])(**config.args)
     else:
         ext = getattr(mod, evaluator_config['name'])()
     return ext
