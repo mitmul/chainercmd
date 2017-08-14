@@ -14,12 +14,14 @@ from chainer import iterators
 from chainer import serializers
 from chainer import training
 from chainer.training import extensions
-from chainer.training import updaters
 from chainer.training import triggers
+from chainer.training import updaters
+from chainercmd.config import get_custum_extension_from_config
 from chainercmd.config import get_dataset_from_config
 from chainercmd.config import get_model_from_config
 from chainercmd.config import get_optimizer_from_config
 from chainercmd.config import get_updater_creator_from_config
+from importlib import import_module
 
 try:
     HAVE_NCCL = updaters.MultiprocessParallelUpdater.available()
@@ -87,9 +89,9 @@ def create_updater(train_iter, optimizer, devices):
 def train(args):
     config = yaml.load(open(args.config))
 
-    # Setting random seed
-    random.seed(config['seed'])
-    np.random.seed(config['seed'])
+    # Set workspace size
+    if 'max_workspace_size' in config:
+        chainer.cuda.set_max_workspace_size(config['max_workspace_size'])
 
     # Output version info
     print('chainer version: {}'.format(chainer.__version__))
@@ -106,14 +108,18 @@ def train(args):
 
     # Instantiate model
     model = get_model_from_config(config)
+    print('model:', model.__class__.__name__)
 
     # Initialize optimizer
     optimizer = get_optimizer_from_config(model, config)
+    print('optimizer:', optimizer.__class__.__name__)
 
     # Setting up datasets
     train_dataset, valid_dataset = get_dataset_from_config(config)
-    print('train: {}'.format(len(train_dataset)))
-    print('valid: {}'.format(len(valid_dataset)))
+    print('train_dataset: {}'.format(len(train_dataset)),
+          train_dataset.__class__.__name__)
+    print('valid_dataset: {}'.format(len(valid_dataset)),
+          valid_dataset.__class__.__name__)
 
     # Prepare devices
     devices = {'main': args.gpus[0]}
@@ -124,49 +130,72 @@ def train(args):
     train_iter, valid_iter = create_iterators(
         train_dataset, config['batchsize'], valid_dataset,
         config['valid_batchsize'], devices)
+    print('train_iter:', train_iter.__class__.__name__)
+    print('valid_iter:', valid_iter.__class__.__name__)
 
-    # Create updater and trainer
+    # Create updater
     if 'updater_creator' in config:
         updater_creator = get_updater_creator_from_config(config)
         updater = updater_creator(train_iter, optimizer, devices)
     else:
         updater = create_updater(train_iter, optimizer, devices)
+    print('updater:', updater.__class__.__name__)
+
+    # Create trainer
     trainer = training.Trainer(
-        updater, (config['stop_epoch'], 'epoch'), out=config['result_dir'])
-
-    if 'log_trigger' in config:
-        log_trigger = config['log_trigger']
-        trainer.extend(extensions.LogReport(
-            trigger=log_trigger, log_name=log_fn))
-
-    if 'snapshot_trigger' in config:
-        st = config['snapshot_trigger'][1]
-        tx = '{' + '.updater.{}'.format(st) + '}'
-        trainer.extend(extensions.snapshot(
-            filename='snapshot_trainer_{}_{}'.format(st, tx)),
-            trigger=tuple(config['snapshot_trigger']))
-
-    if 'valid_trigger' in config:
-        trainer.extend(
-            extensions.Evaluator(valid_iter, model, device=args.gpus[0]),
-            trigger=config['valid_trigger'])
+        updater, config['strop_trigger'], out=config['result_dir'])
+    print('Trainer stops:', config['stop_trigger'])
 
     # Trainer extensions
     for ext in config['trainer_extension']:
-        if isinstance(ext, dict):
-            ext, values = ext.popitem()
-        if ext == 'dump_graph':
+        ext, values = ext.popitem()
+        if ext == 'LogReport':
+            trigger = values['trigger']
+            trainer.extend(extensions.LogReport(
+                trigger=trigger, log_name=log_fn))
+        elif ext == 'observe_lr':
+            trainer.extend(extensions.observe_lr(), trigger=values['trigger'])
+        elif ext == 'dump_graph':
             trainer.extend(extensions.dump_graph(**values))
+        elif ext == 'Evaluator':
+            assert 'module' in values
+            mod = import_module(values['module'])
+            evaluator = getattr(mod, values['name'])
+            if evaluator is extensions.Evaluator:
+                evaluator = evaluator(
+                    valid_iter, model, device=devices['main'])
+            else:
+                evaluator = evaluator(valid_iter, model.predictor)
+            trainer.extend(
+                evaluator, trigger=values['trigger'], name=values['prefix'])
         elif ext == 'PlotReport':
-            values['trigger'] = log_trigger
             trainer.extend(extensions.PlotReport(**values))
         elif ext == 'PrintReport':
-            if 'lr' in values:
-                trainer.extend(extensions.observe_lr())
-            trainer.extend(extensions.PrintReport(values))
+            trigger = values.pop('trigger')
+            trainer.extend(extensions.PrintReport(**values),
+                           trigger=trigger)
         elif ext == 'ProgressBar':
+            upd_int = values['update_interval']
+            trigger = values['trigger']
             trainer.extend(extensions.ProgressBar(
-                update_interval=log_trigger[0]), trigger=log_trigger)
+                update_interval=upd_int), trigger=trigger)
+        elif ext == 'snapshot':
+            filename = values['filename']
+            trigger = values['trigger']
+            trainer.extend(extensions.snapshot(
+                filename=filename), trigger=trigger)
+        elif ext == 'ParameterStatistics':
+            links = []
+            for link_name in values.pop('links'):
+                lns = [ln.strip() for ln in link_name.split('.') if ln.strip()]
+                target = model
+                for ln in lns:
+                    target = getattr(target, ln)
+                links.append(target)
+            trainer.extend(extensions.ParameterStatistics(links, **values))
+        elif ext == 'custom':
+            custom_extension = get_custum_extension_from_config(values)
+            trainer.extend(custom_extension)
 
     # LR decay
     if 'lr_drop_ratio' in config['optimizer'] \

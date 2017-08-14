@@ -39,7 +39,9 @@ class Loss(ConfigBase):
 def get_model(
         result_dir, model_file, model_name, model_args, loss_file, loss_name,
         loss_args):
-    loader = SourceFileLoader(model_name, model_file)
+    model_fullname = model_file.replace('/', '.').replace('.py', '')
+    model_fullname += '.{}'.format(model_name)
+    loader = SourceFileLoader(model_fullname, model_file)
     mod = loader.load_module()
     model = getattr(mod, model_name)
 

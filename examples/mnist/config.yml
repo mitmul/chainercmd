@@ -1,10 +1,4 @@
-batchsize: 128
-valid_batchsize: 128
-valid_trigger: [1, 'epoch']
-snapshot_trigger: [20, 'epoch']
-log_trigger: [1, "epoch"]
-stop_epoch: 20
-seed: 0
+stop_trigger: [20, "epoch"]
 
 dataset:
   train:
@@ -39,12 +33,12 @@ optimizer:
     points: [10, 15]
     unit: epoch
 
-updater_creator:
-  file: updater_creator.py
-  name: updater_creator
-  args:
-    arg1: arg1_value
-    arg2: arg2_value
+# updater_creator:
+#   file: updater_creator.py
+#   name: updater_creator
+#   args:
+#     arg1: arg1_value
+#     arg2: arg2_value
 
 trainer_extension:
   - dump_graph:

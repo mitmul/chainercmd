@@ -15,7 +15,7 @@ $ pip install chainercmd
 ## Requirement
 
 - Python 3.4.4+
-- Chainer 2.0.1+
+- Chainer 3.0.0b1+
 - PyYAML 3.12+
 
 ## Create new project

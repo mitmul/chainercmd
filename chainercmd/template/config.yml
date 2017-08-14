@@ -1,10 +1,5 @@
-batchsize: 128
-valid_batchsize: 128
-valid_trigger: [1, 'epoch']
-snapshot_trigger: [20, 'epoch']
-log_trigger: [1, "epoch"]
-stop_epoch: 20
-seed: 0
+stop_trigger: [20, "epoch"]
+# max_workspace_size: 8388608  # default: 8 * 1024 * 1024
 
 dataset:
   train:
@@ -39,35 +34,95 @@ optimizer:
     unit: epoch
 
 # You can ommit this part
-updater_creator:
-  file: updater_creator.py
-  name: MyUpdaterCreator
-  args:
-    print: True
+# updater_creator:
+#   file: updater_creator.py
+#   name: MyUpdaterCreator
+#   args:
+#     print: True
 
 trainer_extension:
+  - custom:
+      file: custom_extension.py
+      name: CustomExtension
+      args:
+          message: 'I am learning the Answer to the Ultimate Question of Life, the Universe, and Everything'
+  - LogReport:
+      trigger: [1, "epoch"]
   - dump_graph:
       root_name: main/loss
       out_name: cg.dot
+  - observe_lr:
+      trigger: [1, "epoch"]
+  - ParameterStatistics:
+      links:
+        - conv1
+        - conv2
+        - conv3
+        - fc4
+        - fc5
+      report_params: True
+      report_grads: True
+      prefix: null
+      trigger: [1, "epoch"]
+  - Evaluator:
+      module: chainer.training.extensions
+      name: Evaluator
+      trigger: [1, "epoch"]
+      prefix: val
+    #   module: chainercv.extensions
+    #   name: SemanticSegmentationEvaluator
+    #   trigger: [1, "epoch"]
+    #   prefix: val
+  - PlotReport:
+      y_keys:
+        - conv1/W/data/mean
+        - conv2/W/data/mean
+        - conv3/W/data/mean
+        - conv4/W/data/mean
+        - fc5/W/data/mean
+        - fc6/W/data/mean
+      x_key: epoch
+      file_name: parameter_mean.png
+      trigger: [1, "epoch"]
+  - PlotReport:
+      y_keys:
+        - conv1/W/data/std
+        - conv2/W/data/std
+        - conv3/W/data/std
+        - conv4/W/data/std
+        - fc5/W/data/std
+        - fc6/W/data/std
+      x_key: epoch
+      file_name: parameter_std.png
+      trigger: [1, "epoch"]
   - PlotReport:
       y_keys:
         - main/loss
-        - validation/main/loss
+        - val/main/loss
       x_key: epoch
       file_name: loss.png
+      trigger: [1, "epoch"]
   - PlotReport:
       y_keys:
         - main/accuracy
-        - validation/main/accuracy
+        - val/main/accuracy
       x_key: epoch
       file_name: accuracy.png
+      trigger: [1, "epoch"]
   - PrintReport:
-    - epoch
-    - iteration
-    - main/loss
-    - validation/main/loss
-    - main/accuracy
-    - validation/main/accuracy
-    - elapsed_time
-    - lr
-  - ProgressBar
+      entries:
+        - epoch
+        - iteration
+        - main/loss
+        - main/accuracy
+        - val/main/loss
+        - val/main/accuracy
+        - elapsed_time
+        - lr
+      trigger: [1, "epoch"]
+  - ProgressBar:
+      update_interval: 10
+      trigger: [10, "iteration"]
+  - snapshot:
+      filename: trainer_{.updater.epoch}_epoch
+      trigger: [10, "epoch"]
