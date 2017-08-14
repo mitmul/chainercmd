@@ -1,0 +1,134 @@
+stop_trigger: [20, "epoch"]
+# max_workspace_size: 8388608  # default: 8 * 1024 * 1024
+
+dataset:
+  train:
+    file: dataset.py
+    name: MNIST
+    batchsize: 128
+    args:
+      split: train
+      ndim: 3
+  valid:
+    file: dataset.py
+    name: MNIST
+    batchsize: 64
+    args:
+      split: valid
+      ndim: 3
+
+model:
+  file: model.py
+  name: LeNet5
+  args:
+    n_class: 10
+
+loss:
+  module: chainer.links.model.classifier
+  # file: loss.py  # If you use your own loss definition, remove "module" key above and use "file" key to specify the path to the file which describes the "name" class for a Loss link.
+  name: Classifier
+
+optimizer:
+  method: MomentumSGD
+  args:
+    lr: 0.01
+  weight_decay: 0.0001
+  lr_drop_ratio: 0.1
+  lr_drop_triggers:
+    points: [10, 15]
+    unit: epoch
+
+# You can ommit this part
+# updater_creator:
+#   file: updater_creator.py
+#   name: MyUpdaterCreator
+#   args:
+#     print: True
+
+trainer_extension:
+  - custom:
+      file: custom_extension.py
+      name: CustomExtension
+      args:
+          message: 'I am learning...'
+  - LogReport:
+      trigger: [1, "epoch"]
+  - dump_graph:
+      root_name: main/loss
+      out_name: cg.dot
+  - observe_lr:
+      trigger: [1, "epoch"]
+  - ParameterStatistics:
+      links:
+        - conv1
+        - conv2
+        - conv3
+        - fc4
+        - fc5
+      report_params: True
+      report_grads: True
+      prefix: null
+      trigger: [1, "epoch"]
+  - Evaluator:
+      module: chainer.training.extensions
+      name: Evaluator
+      trigger: [1, "epoch"]
+      prefix: val
+    # You can specify other evaluator like this:
+    #   module: chainercv.extensions
+    #   name: SemanticSegmentationEvaluator
+    #   trigger: [1, "epoch"]
+    #   prefix: val
+  - PlotReport:
+      y_keys:
+        - conv1/W/data/mean
+        - conv2/W/data/mean
+        - conv3/W/data/mean
+        - conv4/W/data/mean
+        - fc5/W/data/mean
+        - fc6/W/data/mean
+      x_key: epoch
+      file_name: parameter_mean.png
+      trigger: [1, "epoch"]
+  - PlotReport:
+      y_keys:
+        - conv1/W/data/std
+        - conv2/W/data/std
+        - conv3/W/data/std
+        - conv4/W/data/std
+        - fc5/W/data/std
+        - fc6/W/data/std
+      x_key: epoch
+      file_name: parameter_std.png
+      trigger: [1, "epoch"]
+  - PlotReport:
+      y_keys:
+        - main/loss
+        - val/main/loss
+      x_key: epoch
+      file_name: loss.png
+      trigger: [1, "epoch"]
+  - PlotReport:
+      y_keys:
+        - main/accuracy
+        - val/main/accuracy
+      x_key: epoch
+      file_name: accuracy.png
+      trigger: [1, "epoch"]
+  - PrintReport:
+      entries:
+        - epoch
+        - iteration
+        - main/loss
+        - main/accuracy
+        - val/main/loss
+        - val/main/accuracy
+        - elapsed_time
+        - lr
+      trigger: [1, "epoch"]
+  - ProgressBar:
+      update_interval: 10
+      trigger: [10, "iteration"]
+  - snapshot:
+      filename: trainer_{.updater.epoch}_epoch
+      trigger: [10, "epoch"]
