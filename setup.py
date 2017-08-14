@@ -5,13 +5,13 @@ from setuptools import setup
 
 setup_requires = []
 install_requires = [
-    'chainer<4',
+    'chainer>=3.0.0b1',
     'pyyaml>=3.12'
 ]
 
 setup(
     name='chainercmd',
-    version='1.0.0a8',
+    version='1.0.0a9',
     description='Command Line Tools for Chainer',
     author='Shunta Saito',
     author_email='shunta.saito@gmail.com',

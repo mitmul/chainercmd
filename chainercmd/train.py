@@ -195,7 +195,7 @@ def train(args):
                 links.append(target)
             trainer.extend(extensions.ParameterStatistics(links, **values))
         elif ext == 'custom':
-            custom_extension = get_custum_extension_from_config( values)
+            custom_extension = get_custum_extension_from_config(values)
             trainer.extend(custom_extension)
 
     # LR decay
