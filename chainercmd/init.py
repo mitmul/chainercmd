@@ -9,6 +9,8 @@ def init_basic(args):
     dataset_template = os.path.abspath(template.dataset.__file__)
     loss_template = os.path.abspath(template.loss.__file__)
     custom_ext_template = os.path.abspath(template.custom_extension.__file__)
+    evaluator_creator_template = os.path.abspath(
+        template.evaluator_creator.__file__)
     updater_creator_template = os.path.abspath(
         template.updater_creator.__file__)
 
@@ -25,15 +27,17 @@ def init_basic(args):
         if not os.path.exists('extension'):
             os.mkdir('extension')
         shutil.copy(custom_ext_template, 'extension/')
+        shutil.copy(evaluator_creator_template, 'extension/')
         if not os.path.exists('updater'):
             os.mkdir('updater')
-        shutil.copy(custom_ext_template, 'updater/')
+        shutil.copy(updater_creator_template, 'updater/')
     else:
         shutil.copy(model_template, './')
         shutil.copy(dataset_template, './')
         shutil.copy(loss_template, './')
         shutil.copy(custom_ext_template, './')
         shutil.copy(updater_creator_template, './')
+        shutil.copy(evaluator_creator_template, './')
     init_config(args)
 
 

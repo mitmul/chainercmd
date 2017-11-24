@@ -38,12 +38,13 @@ class Custom(ConfigBase):
             required_keys, optional_keys, kwargs, self.__class__.__name__)
 
 
-def get_custum_extension_from_config(evaluator_config):
-    config = Custom(**evaluator_config)
+def get_custum_extension_from_config(custom_extension_config):
+    config = Custom(**custom_extension_config)
     loader = SourceFileLoader(config.name, config.file)
     mod = loader.load_module()
     if hasattr(config, 'args'):
-        ext = getattr(mod, evaluator_config['name'])(**config.args)
+        ext = getattr(mod, custom_extension_config['name'])(**config.args)
     else:
-        ext = getattr(mod, evaluator_config['name'])()
+        ext = getattr(mod, custom_extension_config['name'])()
     return ext
+

@@ -58,15 +58,10 @@ trainer_extension:
   - observe_lr:
       trigger: [1, "epoch"]
   - Evaluator:
-      module: chainer.training.extensions
-      name: Evaluator
+      file: evaluator_creator.py
+      name: evaluator_creator
       trigger: [1, "epoch"]
       prefix: val
-    # You can specify other evaluator like this:
-    #   module: chainercv.extensions
-    #   name: SemanticSegmentationEvaluator
-    #   trigger: [1, "epoch"]
-    #   prefix: val
   - PlotReport:
       y_keys:
         - main/loss

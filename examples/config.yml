@@ -47,7 +47,6 @@ trainer_extension:
         name: CustomExtension
         args:
             message: 'I am learning...'
-        trigger: [20, "epoch"]
     - LogReport:
         trigger: [1, "epoch"]
     - dump_graph:

@@ -7,17 +7,18 @@ import shutil
 import time
 from importlib import import_module
 
-import yaml
-
 import chainer
+import yaml
 from chainer import iterators
 from chainer import serializers
 from chainer import training
 from chainer.training import extensions
 from chainer.training import triggers
 from chainer.training import updaters
+
 from chainercmd.config import get_custum_extension_from_config
 from chainercmd.config import get_dataset_from_config
+from chainercmd.config import get_evaluator_creator_from_config
 from chainercmd.config import get_model_from_config
 from chainercmd.config import get_optimizer_from_config
 from chainercmd.config import get_updater_creator_from_config
@@ -71,20 +72,6 @@ def create_iterators(train_dataset, batchsize, valid_dataset, valid_batchsize,
     return train_iter, valid_iter
 
 
-def create_updater(train_iter, optimizer, devices):
-    if HAVE_NCCL and len(devices) > 1:
-        updater = training.updaters.MultiprocessParallelUpdater(
-            train_iter, optimizer, devices=devices)
-    elif len(devices) > 1:
-        optimizer.lr /= len(devices)
-        updater = training.ParallelUpdater(
-            train_iter, optimizer, devices=devices)
-    else:
-        updater = training.StandardUpdater(
-            train_iter, optimizer, device=devices['main'])
-    return updater
-
-
 def train(args):
     config = yaml.load(open(args.config))
 
@@ -135,11 +122,8 @@ def train(args):
     print('valid_iter:', valid_iter.__class__.__name__)
 
     # Create updater
-    if 'updater_creator' in config:
-        updater_creator = get_updater_creator_from_config(config)
-        updater = updater_creator(train_iter, optimizer, devices)
-    else:
-        updater = create_updater(train_iter, optimizer, devices)
+    updater_creator = get_updater_creator_from_config(config)
+    updater = updater_creator(train_iter, optimizer, devices)
     print('updater:', updater.__class__.__name__)
 
     # Create trainer
@@ -159,14 +143,8 @@ def train(args):
         elif ext == 'dump_graph':
             trainer.extend(extensions.dump_graph(**values))
         elif ext == 'Evaluator':
-            assert 'module' in values
-            mod = import_module(values['module'])
-            evaluator = getattr(mod, values['name'])
-            if evaluator is extensions.Evaluator:
-                evaluator = evaluator(
-                    valid_iter, model, device=args.gpus[0])
-            else:
-                evaluator = evaluator(valid_iter, model.predictor)
+            evaluator_creator = get_evaluator_creator_from_config(values)
+            evaluator = evaluator_creator(valid_iter, model, devices)
             trainer.extend(
                 evaluator, trigger=values['trigger'], name=values['prefix'])
         elif ext == 'PlotReport':
@@ -196,7 +174,7 @@ def train(args):
             trainer.extend(extensions.ParameterStatistics(links, **values))
         elif ext == 'custom':
             custom_extension = get_custum_extension_from_config(values)
-            trainer.extend(custom_extension)
+            trainer.extend(custom_extension, trigger=values['trigger'])
 
     # LR decay
     if 'lr_drop_ratio' in config['optimizer'] \

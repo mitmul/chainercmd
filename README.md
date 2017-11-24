@@ -3,11 +3,7 @@
 ![Build Status](https://travis-ci.org/mitmul/chainercmd.svg?branch=master)
 ![MIT License](https://img.shields.io/github/license/mitmul/chainercmd.svg)
 
-You can write all configuration of training in a YAML file, and start training with one line:
-
-```bash
-$ chainer train config.yml
-```
+ChainerCMD is a project instantiation tool for Chainer.
 
 ## Installation
 
@@ -18,10 +14,10 @@ $ pip install chainercmd
 ## Requirement
 
 - Python 3.4.4+
-- Chainer 3.0.0b1+
+- Chainer 3.1.0a1
 - PyYAML 3.12+
 
-## Create new project
+## Quick Start
 
 ```
 $ chainer init
@@ -30,11 +26,14 @@ $ chainer init
 It produces the below files
 
 - config.yml
-- model.py
-- loss.py
+- custom_extension.py
 - dataset.py
+- evaluator_creator.py
+- loss.py
+- model.py
+- updater_creator.py
 
-You can modify these files and start training by running
+You can modify these files and start training by
 
 ```bash
 $ MPLBACKEND=Agg chainer train config.yml --gpus 0
