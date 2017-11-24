@@ -14,9 +14,7 @@ from chainercmd import train
 class TestTrain(unittest.TestCase):
 
     def setUp(self):
-        # dname = os.path.dirname(template.__file__)
-        # config_fn = '{}/config.yml'.format(dname)
-        config_fn = 'examples/mnist/config.yml'
+        config_fn = 'examples/config.yml'
 
         args = namedtuple(
             'args', ['config', 'gpus', 'seed', 'result_dir', 'resume'])
