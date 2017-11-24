@@ -31,7 +31,7 @@ def main():
     parser_init = subparsers.add_parser(
         'init', help='Generate templates of dataset.py, loss.py, and model.py')
     parser_init.add_argument(
-        '--create_subdirs', action='store_true', default=False,
+        '--create_subdirs', '-d', action='store_true', default=False,
         help='If you want to create subdirs ("model", "loss", "dataset"), '
              'give this flag.')
     parser_init.set_defaults(handler=init.init_basic)
@@ -41,7 +41,7 @@ def main():
         'init_full', help='Generate templates of dataset.py, loss.py, '
                           'model.py, and updater_creator.py')
     parser_init.add_argument(
-        '--create_subdirs', action='store_true', default=False,
+        '--create_subdirs', '-d', action='store_true', default=False,
         help='If you want to create subdirs ("model", "loss", "dataset", '
              '"updater_creator"), give this flag.')
     parser_init.set_defaults(handler=init.init_full)

@@ -1,4 +1,7 @@
 # ChainerCMD
+![pypi](https://img.shields.io/pypi/v/chainercmd.svg)
+![Build Status](https://travis-ci.org/mitmul/chainercmd.svg?branch=master)
+![MIT License](https://img.shields.io/github/license/mitmul/chainercmd.svg)
 
 You can write all configuration of training in a YAML file, and start training with one line:
 

@@ -1,36 +1,27 @@
+sudo: false
+dist: trusty
 language: python
-
-cache:
-  - pip
-  - ccache
-
-matrix:
-  include:
-    - os: linux
-      python: "2.7"
-    - os: linux
-      python: "3.4"
-    - os: linux
-      python: "3.5.1"
+python:
+  - "2.7"
+  - "3.6"
+env:
+  - CHAINER_VERSION="==3.1.0"
+  - CHAINER_VERSION="==4.0.0b1"
 
 install:
   - pip install -U pip wheel
   - python setup.py sdist
   - pip install dist/*.tar.gz
-  - pip install chainer
-  - pip install nose hacking mock
+  - pip install "chainer==$CHAINER_VERSION"
+  - pip install flake8
+  - pip install hacking
   - pip install autopep8
+  - pip install mock
+  - pip install pytest
 
 script:
-  - flake8
-  - flake8 --config=.flake8.cython
+  - flake8 .
   - autopep8 -r . --global-config .pep8 --diff | tee check_autopep8
   - test ! -s check_autopep8
-  - cd tests
-  - nosetests --with-doctest .
-  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-      cd ..;
-      READTHEDOCS=True python setup.py develop;
-    fi
+  - py.test .
 
-sudo: false

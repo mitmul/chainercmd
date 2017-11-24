@@ -4,7 +4,7 @@ from chainer.functions.evaluation import accuracy
 from chainer.functions.loss import softmax_cross_entropy
 
 
-class MyLoss(link.Chain):
+class Classifier(link.Chain):
 
     def __init__(self, predictor):
         super().__init__()

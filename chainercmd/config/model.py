@@ -26,11 +26,10 @@ class Loss(ConfigBase):
 
     def __init__(self, **kwargs):
         required_keys = [
+            'file',
             'name',
         ]
         optional_keys = [
-            'module',
-            'file',
             'args',
         ]
         super().__init__(
@@ -39,7 +38,7 @@ class Loss(ConfigBase):
 
 def get_model(
         result_dir, model_file, model_name, model_args,
-        loss_module, loss_file, loss_name, loss_args):
+        loss_file, loss_name, loss_args):
     model_fullname = model_file.replace('/', '.').replace('.py', '')
     model_fullname += '.{}'.format(model_name)
     loader = SourceFileLoader(model_fullname, model_file)
@@ -60,15 +59,8 @@ def get_model(
 
     # Wrap the model with loss class
     if chainer.config.train and loss_name is not None:
-        if loss_module is not None:
-            mod = import_module(loss_module)
-        elif loss_file is not None:
-            loader = SourceFileLoader(loss_name, loss_file)
-            mod = loader.load_module()
-        else:
-            raise ValueError(
-                'Please specify EITHER \'module\' or \'file\' for the loss '
-                'class.')
+        loader = SourceFileLoader(loss_name, loss_file)
+        mod = loader.load_module()
         loss = getattr(mod, loss_name)
         if loss_args is not None:
             model = loss(model, **loss_args)
@@ -88,4 +80,4 @@ def get_model_from_config(config):
     loss = Loss(**config['loss'])
     return get_model(
         config['result_dir'], model.file, model.name, model.args,
-        loss.module, loss.file, loss.name, loss.args)
+        loss.file, loss.name, loss.args)
