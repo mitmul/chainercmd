@@ -11,7 +11,7 @@ install_requires = [
 
 setup(
     name='chainercmd',
-    version='3.1.0a1',
+    version='3.1.0a2',
     description='Command Line Tools for Chainer',
     author='Shunta Saito',
     author_email='shunta.saito@gmail.com',
